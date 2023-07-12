@@ -23,7 +23,7 @@ uint8_t gCurrentPaletteBottom = 0;
 uint8_t gCurrentShiftBottom = 150;
 uint8_t gPaletteTopTime = 9;//seconds
 uint8_t gPaletteBottomTime = 9;//seconds
-uint8_t gPaletteIndex = 0; //index for the color palettes to continue cycling through
+uint8_t gPaletteIndex = 0; //index for the color pal;ksdl;k;lskdlettes to continue cycling through
 uint8_t gPaletteIndexFunc = 0; //same as above but only modified within functions
 uint8_t gCCW = 10;
 uint8_t gCW = 10;
@@ -34,7 +34,7 @@ uint8_t gCounterFunc = 0;
 uint8_t BPM = 120; // beats per minute for functions that use BPM
 ////////////////////////////////////////////////
 
-CRGB rawLeds[NUM_LEDS];
+CRGB rawLeds[NUM_LEDS]; // Creating rawLeds which is an array of CRGB objects initialized with the default constructor
 CRGBSet leds(rawLeds, NUM_LEDS);
 
 
@@ -62,7 +62,6 @@ Letter U = {leds(21,22),leds(31,32)};//Checked
 Letter S = {leds(23,24),leds(29,30)};//Checked
 
 Letter PolyJamorous[12] = {P,O1,L,Y,J,A,M,O2,R,O3,U,S};
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +163,9 @@ void POLY_JAM_R_US_2(){
     }
 }
 
-void RainbowCircle(){  
+void RainbowCircle(){ 
+  // This function only runs again after the circle is complete
+  Serial.println("RaibowCircle ran!");
   for(uint8_t i=0 ; i<NUM_LEDS ; i++){
       fadeToBlackBy(leds, NUM_LEDS, 10);
       leds[i] = CHSV(rando,255,255);
@@ -174,6 +175,9 @@ void RainbowCircle(){
 }
 
 void RainbowCircleDouble(){
+  // This function runs every time a single pixel is updated
+  Serial.println("RaibowCircleDouble ran!");
+
     fadeToBlackBy(leds, NUM_LEDS, 10);
     leds[gCCW] = CHSV(gHue*6+150,255,255);
     leds[gCW] = CHSV(gHue*6,255,255);
@@ -190,7 +194,7 @@ void RainbowCircleDouble(){
     else{
         gCW++; 
     }
-    FastLED.delay(30);
+    // No need for FastLED.delay() here because it's using the main loop timing, so that could only make it slower
 }
 
 void Matrix(){
@@ -258,7 +262,7 @@ void ResetLEDs(){ // Sets all LEDs to black for a short time to try to fix the f
 }
 
 void Amor(){
-  DoLetterPalette()
+//  DoLetterPalette()
 
 }
 
@@ -266,6 +270,8 @@ void Amor(){
 ////////////////////////////////////////// SETUP ///////////////////////////////////////////////////
 //////////////////////////////////////////////// ///////////////////////////////////////////////////
 void setup() {
+  // Serial for debugging
+  Serial.begin(9600);
   // put your setup code here, to run once:
   delay(3000); // 3 second delay for recovery
   FastLED.clear();
@@ -280,17 +286,26 @@ void setup() {
 
 ////////////////////////////////////// POST-FUNCTION DECLARATIONS //////////////////////////////////
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = {PolyRhythm_2_3, POLY_JAM_R_US_2, ZoomIn, PolyRhythm_3_4, Bounce, Matrix, POLYJAMOROUS_SIMPLE, RainbowCircle, RainbowCircleDouble, ResetLEDs}; //POLYJAMOROUS_SIMPLE
+ SimplePatternList gPatterns = {PolyRhythm_2_3, POLY_JAM_R_US_2, ZoomIn, PolyRhythm_3_4, Bounce, Matrix, POLYJAMOROUS_SIMPLE, RainbowCircle, RainbowCircleDouble, ResetLEDs}; //POLYJAMOROUS_SIMPLE
+//SimplePatternList gPatterns = {RainbowCircleDouble, RainbowCircle}; // Set gPatterns to just one or two for debugging. Comment out
 
 void nextPattern(){
   // add one to the current pattern number, and wrap around at the end
   gCurrentPatternNumber = (gCurrentPatternNumber + 1) % (sizeof(gPatterns)/sizeof(gPatterns[0]) );
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////// MAIN LOOP //////////////////////////////////////////////////
 //////////////////////////////////////////////// ///////////////////////////////////////////////////
 void loop() {
+  // Main loop will continually run the same function over and over again until the nextPattern() function is run 
+  // which will switch it to the next pattern, then it will run that one over and over again.
+  // Some functions like RainbowCircle have a loop inside them so they will only get called again once the animation is complete
+  // Others like RainbowCircleDouble don't have a loop in them and rely on global variables and the main loop speed to make an animation
+  
+  Serial.println("Main loop ran!");
+
     FastLED.show();
     FastLED.delay(1000/FRAMES_PER_SECOND); 
     EVERY_N_MILLISECONDS( 51 ) { gHue++; }; // slowly cycle the "base color" through the rainbow
